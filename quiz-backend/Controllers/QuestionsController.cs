@@ -38,8 +38,7 @@ namespace quiz_backend.Controllers
         public async Task<IActionResult> Put(int id, [FromBody]Question question)
         {
             // Question question = await context.Questions.SingleOrDefaultAsync(q => q.ID == id);
-
-            //context.Entry needs ID in the body data, so to ensure id's are matching use a simple if statement to check
+            
             if(id != question.ID)
             {
                 return BadRequest();
