@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace quiz_backend.Controllers
 {
@@ -45,11 +47,36 @@ namespace quiz_backend.Controllers
 
             await signInManager.SignInAsync(user, isPersistent: false);
 
+            return Ok(CreateToken(user));
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] Credentials credentials) 
+        {
+            SignInResult result = await signInManager.PasswordSignInAsync(credentials.Email, credentials.Password, false, false);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest();
+            }
+
+            IdentityUser user = await userManager.FindByEmailAsync(credentials.Email);
+
+            return Ok(CreateToken(user));
+        }
+
+        string CreateToken(IdentityUser user)
+        {
+            Claim[] claims = new Claim[]
+          {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id)
+          };
+
             SymmetricSecurityKey signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("this is the secret phrase"));
             SigningCredentials signingCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
 
-            JwtSecurityToken jwt = new JwtSecurityToken(signingCredentials: signingCredentials);
-            return Ok(new JwtSecurityTokenHandler().WriteToken(jwt));
+            JwtSecurityToken jwt = new JwtSecurityToken(signingCredentials: signingCredentials, claims: claims);
+            return new JwtSecurityTokenHandler().WriteToken(jwt);
         }
     }
 }

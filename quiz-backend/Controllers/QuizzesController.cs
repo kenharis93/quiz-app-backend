@@ -23,8 +23,17 @@ namespace quiz_backend.Controllers
         }
 
         // GET: api/Quizzes
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Quiz>>> GetQuiz()
+        {
+            string userId = HttpContext.User.Claims.First().Value;
+            //filters the quiz returns based off userId
+            return await _context.Quiz.Where(q => q.OwnerId == userId).ToListAsync();
+        }
+
+        [HttpGet("all")]
+        public async Task<ActionResult<IEnumerable<Quiz>>> GetAllQuiz()
         {
             return await _context.Quiz.ToListAsync();
         }
@@ -82,7 +91,12 @@ namespace quiz_backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Quiz>> PostQuiz(Quiz quiz)
         {
+            //Add ownership to the Quiz from the token passed in
+            string userId = HttpContext.User.Claims.First().Value;
+            quiz.OwnerId = userId;
+            //
             _context.Quiz.Add(quiz);
+
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetQuiz", new { id = quiz.ID }, quiz);
